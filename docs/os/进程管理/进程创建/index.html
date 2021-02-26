@@ -1,0 +1,490 @@
+<!doctype html><html lang=zh class=no-js> <head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=description content=Linux内核><meta name=author content=mestarz><link href=https://mestarz.github.io/%E8%BF%9B%E7%A8%8B%E7%AE%A1%E7%90%86/%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA/ rel=canonical><link rel="shortcut icon" href=../../assets/images/favicon.png><meta name=generator content="mkdocs-1.1.2, mkdocs-material-7.0.2"><title>进程创建 - Linux内核</title><link rel=stylesheet href=../../assets/stylesheets/main.1655a90d.min.css><link rel=stylesheet href=../../assets/stylesheets/palette.7fa14f5b.min.css><meta name=theme-color content=#ffffff><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link rel=stylesheet href="https://fonts.googleapis.com/css?family=Noto+Sans:300,400,400i,700%7CSource+Code+Pro&display=fallback"><style>:root{--md-text-font-family:"Noto Sans";--md-code-font-family:"Source Code Pro"}</style><link rel=stylesheet href=../../static/css/extra.css></head> <body dir=ltr data-md-color-scheme=preference data-md-color-primary=white data-md-color-accent=red> <script>matchMedia("(prefers-color-scheme: dark)").matches&&document.body.setAttribute("data-md-color-scheme","slate")</script> <input class=md-toggle data-md-toggle=drawer type=checkbox id=__drawer autocomplete=off> <input class=md-toggle data-md-toggle=search type=checkbox id=__search autocomplete=off> <label class=md-overlay for=__drawer></label> <div data-md-component=skip> <a href=#_1 class=md-skip> 跳转至 </a> </div> <div data-md-component=announce> </div> <header class=md-header data-md-component=header> <nav class="md-header__inner md-grid" aria-label=Header> <a href=https://mestarz.github.io/ title=Linux内核 class="md-header__button md-logo" aria-label=Linux内核> <img src=../../static/img/logo.png alt=logo> </a> <label class="md-header__button md-icon" for=__drawer> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg> </label> <div class=md-header__title data-md-component=header-title> <div class=md-header__ellipsis> <div class=md-header__topic> <span class=md-ellipsis> Linux内核 </span> </div> <div class=md-header__topic data-md-component=header-topic> <span class=md-ellipsis> 进程创建 </span> </div> </div> </div> <div class=md-header__options> </div> <label class="md-header__button md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg> </label> <div class=md-search data-md-component=search role=dialog> <label class=md-search__overlay for=__search></label> <div class=md-search__inner role=search> <form class=md-search__form name=search> <input type=text class=md-search__input name=query aria-label=搜索 placeholder=搜索 autocapitalize=off autocorrect=off autocomplete=off spellcheck=false data-md-component=search-query data-md-state=active required> <label class="md-search__icon md-icon" for=__search> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5z"/></svg> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg> </label> <button type=reset class="md-search__icon md-icon" aria-label=Clear tabindex=-1> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg> </button> </form> <div class=md-search__output> <div class=md-search__scrollwrap data-md-scrollfix> <div class=md-search-result data-md-component=search-result> <div class=md-search-result__meta> 正在初始化搜索引擎 </div> <ol class=md-search-result__list></ol> </div> </div> </div> </div> </div> <div class=md-header__source> <a href=https://github.com/mestarz/mestarz-os/ title="前往 GitHub 仓库" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 480 512"><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1zM480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2zm-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3zm-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1z"/></svg> </div> <div class=md-source__repository> mestarz/mestarz-os </div> </a> </div> </nav> </header> <div class=md-container data-md-component=container> <nav class=md-tabs aria-label=Tabs data-md-component=tabs> <div class="md-tabs__inner md-grid"> <ul class=md-tabs__list> <li class=md-tabs__item> <a href=../.. class=md-tabs__link> 介绍 </a> </li> <li class=md-tabs__item> <a href=../../%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8/ class=md-tabs__link> 内核调试 </a> </li> <li class=md-tabs__item> <a href=../%E8%BF%9B%E7%A8%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/ class="md-tabs__link md-tabs__link--active"> 进程管理 </a> </li> </ul> </div> </nav> <main class=md-main data-md-component=main> <div class="md-main__inner md-grid"> <div class="md-sidebar md-sidebar--primary" data-md-component=sidebar data-md-type=navigation> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--primary md-nav--lifted" aria-label=Navigation data-md-level=0> <label class=md-nav__title for=__drawer> <a href=https://mestarz.github.io/ title=Linux内核 class="md-nav__button md-logo" aria-label=Linux内核> <img src=../../static/img/logo.png alt=logo> </a> Linux内核 </label> <div class=md-nav__source> <a href=https://github.com/mestarz/mestarz-os/ title="前往 GitHub 仓库" class=md-source data-md-component=source> <div class="md-source__icon md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 480 512"><path d="M186.1 328.7c0 20.9-10.9 55.1-36.7 55.1s-36.7-34.2-36.7-55.1 10.9-55.1 36.7-55.1 36.7 34.2 36.7 55.1zM480 278.2c0 31.9-3.2 65.7-17.5 95-37.9 76.6-142.1 74.8-216.7 74.8-75.8 0-186.2 2.7-225.6-74.8-14.6-29-20.2-63.1-20.2-95 0-41.9 13.9-81.5 41.5-113.6-5.2-15.8-7.7-32.4-7.7-48.8 0-21.5 4.9-32.3 14.6-51.8 45.3 0 74.3 9 108.8 36 29-6.9 58.8-10 88.7-10 27 0 54.2 2.9 80.4 9.2 34-26.7 63-35.2 107.8-35.2 9.8 19.5 14.6 30.3 14.6 51.8 0 16.4-2.6 32.7-7.7 48.2 27.5 32.4 39 72.3 39 114.2zm-64.3 50.5c0-43.9-26.7-82.6-73.5-82.6-18.9 0-37 3.4-56 6-14.9 2.3-29.8 3.2-45.1 3.2-15.2 0-30.1-.9-45.1-3.2-18.7-2.6-37-6-56-6-46.8 0-73.5 38.7-73.5 82.6 0 87.8 80.4 101.3 150.4 101.3h48.2c70.3 0 150.6-13.4 150.6-101.3zm-82.6-55.1c-25.8 0-36.7 34.2-36.7 55.1s10.9 55.1 36.7 55.1 36.7-34.2 36.7-55.1-10.9-55.1-36.7-55.1z"/></svg> </div> <div class=md-source__repository> mestarz/mestarz-os </div> </a> </div> <ul class=md-nav__list data-md-scrollfix> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle" data-md-toggle=__nav_1 type=checkbox id=__nav_1> <label class=md-nav__link for=__nav_1> 介绍 <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav aria-label=介绍 data-md-level=1> <label class=md-nav__title for=__nav_1> <span class="md-nav__icon md-icon"></span> 介绍 </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../.. class=md-nav__link> Welcome to MkDocs </a> </li> <li class=md-nav__item> <a href=../../%E4%BB%8B%E7%BB%8D/%E5%86%85%E6%A0%B8%E7%BB%93%E6%9E%84%E4%BB%8B%E7%BB%8D/ class=md-nav__link> 内核结构介绍 </a> </li> <li class=md-nav__item> <a href=../../%E4%BB%8B%E7%BB%8D/%E6%BA%90%E7%A0%81%E6%B5%8F%E8%A7%88%E6%96%B9%E6%B3%95/ class=md-nav__link> 源码浏览方法 </a> </li> <li class=md-nav__item> <a href=../../%E4%BB%8B%E7%BB%8D/%E7%9B%B8%E5%85%B3%E5%B7%A5%E5%85%B7%E4%BB%8B%E7%BB%8D/ class=md-nav__link> 相关工具介绍 </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--nested"> <input class="md-nav__toggle md-toggle" data-md-toggle=__nav_2 type=checkbox id=__nav_2> <label class=md-nav__link for=__nav_2> 内核调试 <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav aria-label=内核调试 data-md-level=1> <label class=md-nav__title for=__nav_2> <span class="md-nav__icon md-icon"></span> 内核调试 </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../../%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/%E7%BC%96%E8%AF%91%E5%86%85%E6%A0%B8/ class=md-nav__link> 编译内核 </a> </li> <li class=md-nav__item> <a href=../../%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/%E4%BD%BF%E7%94%A8QEMU%E8%BF%90%E8%A1%8C%E5%86%85%E6%A0%B8/ class=md-nav__link> 使用QEMU运行内核 </a> </li> <li class=md-nav__item> <a href=../../%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/%E4%BD%BF%E7%94%A8GDB%E8%B0%83%E8%AF%95%E5%86%85%E6%A0%B8/ class=md-nav__link> 使用GDB调试内核 </a> </li> <li class=md-nav__item> <a href=../../%E5%86%85%E6%A0%B8%E8%B0%83%E8%AF%95/%E4%BD%BF%E7%94%A8%E6%A0%91%E8%8E%93%E6%B4%BE%E8%BF%90%E8%A1%8C%E5%86%85%E6%A0%B8/ class=md-nav__link> 使用树莓派运行内核 </a> </li> </ul> </nav> </li> <li class="md-nav__item md-nav__item--active md-nav__item--nested"> <input class="md-nav__toggle md-toggle" data-md-toggle=__nav_3 type=checkbox id=__nav_3 checked> <label class=md-nav__link for=__nav_3> 进程管理 <span class="md-nav__icon md-icon"></span> </label> <nav class=md-nav aria-label=进程管理 data-md-level=1> <label class=md-nav__title for=__nav_3> <span class="md-nav__icon md-icon"></span> 进程管理 </label> <ul class=md-nav__list data-md-scrollfix> <li class=md-nav__item> <a href=../%E8%BF%9B%E7%A8%8B%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/ class=md-nav__link> 进程生命周期 </a> </li> <li class=md-nav__item> <a href=../%E8%BF%9B%E7%A8%8B%E6%8F%8F%E8%BF%B0%E7%AC%A6/ class=md-nav__link> 进程描述符 </a> </li> <li class=md-nav__item> <a href=../%E8%BF%9B%E7%A8%8B%E7%8A%B6%E6%80%81/ class=md-nav__link> 进程状态 </a> </li> <li class=md-nav__item> <a href=../%E8%BF%9B%E7%A8%8B%E5%AE%B6%E6%97%8F%E6%A0%91/ class=md-nav__link> 进程家族树 </a> </li> <li class="md-nav__item md-nav__item--active"> <input class="md-nav__toggle md-toggle" data-md-toggle=toc type=checkbox id=__toc> <label class="md-nav__link md-nav__link--active" for=__toc> 进程创建 <span class="md-nav__icon md-icon"></span> </label> <a href=./ class="md-nav__link md-nav__link--active"> 进程创建 </a> <nav class="md-nav md-nav--secondary" aria-label=目录> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> 目录 </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#_1 class=md-nav__link> 创建线程 </a> </li> </ul> </nav> </li> <li class=md-nav__item> <a href=../%E8%BF%9B%E7%A8%8B%E7%BB%88%E6%AD%A2/ class=md-nav__link> 进程终止 </a> </li> </ul> </nav> </li> </ul> </nav> </div> </div> </div> <div class="md-sidebar md-sidebar--secondary" data-md-component=sidebar data-md-type=toc> <div class=md-sidebar__scrollwrap> <div class=md-sidebar__inner> <nav class="md-nav md-nav--secondary" aria-label=目录> <label class=md-nav__title for=__toc> <span class="md-nav__icon md-icon"></span> 目录 </label> <ul class=md-nav__list data-md-component=toc data-md-scrollfix> <li class=md-nav__item> <a href=#_1 class=md-nav__link> 创建线程 </a> </li> </ul> </nav> </div> </div> </div> <div class=md-content data-md-component=content> <article class="md-content__inner md-typeset"> <a href=https://github.com/mestarz/mestarz-os/edit/master/docs/进程管理/进程创建.md title=编辑此页 class="md-content__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg> </a> <h1>进程创建</h1> <p>一般来说，进程的产生分为<strong>在新地址空间创建进</strong><strong>程</strong>，<strong>读入可执行文件</strong>，<strong>开始执行</strong>。在Unix中，上述步骤分解到了两个单独的函数fork和exec。</p> <p>fork函数通过<strong>拷贝当前进程创建子进程</strong>，子进程和父进程之间的区别仅仅在于<strong>PID</strong>、<strong>PPID</strong>和<strong>某些资源和统计量</strong>（如挂起的信号）；</p> <p>exec函数负责<strong>读取可执行文件</strong>并将其<strong>载入地址空间开始运行</strong>；</p> <p>传统fork回直接把所有的资源复制给新的进程。这种情况下，如果新进程打算执行一个新的映像，那么所有的拷贝都将前功尽弃。Linux的fork使用写时拷贝页实现。即资源的复制只有在需要写入的时候才进行，写入之前都是以只读的方式进行共享。在页根本不会被写入的情况下（例如在调用fork( )后立即调用exec( )）就无需复制了。</p> <p>Linux通过clone()系统调用实现fork()。该调用通过一些列的参数标志来指明父、子进程需要共享的资源。fork()、vfork()和__clone()都根据各自需要的标志参数来调用clone()，然后由clone来调用do_fork() [./kernel/fork.c] 。</p> <p>ps:论是if(likely(value))还是if(unlikely(value))，从代码阅读的角度与if(value)是完全一样的，区别点在于编译器根据三种情况所作出的优化措施不同；</p> <p>​ likely，是通知编译器if (true)被执行的概率比较高；</p> <p>​ unlikely，是通知编译器if(false)被执行的概率比较高；</p> <div class=highlight><pre><span></span><code><span class=cm>/*</span>
+<span class=cm> *  Ok, this is the main fork-routine.</span>
+<span class=cm> *</span>
+<span class=cm> * It copies the process, and if successful kick-starts</span>
+<span class=cm> * it and waits for it to finish using the VM if required.</span>
+<span class=cm> */</span>
+<span class=kt>long</span> <span class=nf>do_fork</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>clone_flags</span><span class=p>,</span>
+          <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>stack_start</span><span class=p>,</span>
+          <span class=k>struct</span> <span class=nc>pt_regs</span> <span class=o>*</span><span class=n>regs</span><span class=p>,</span>
+          <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>stack_size</span><span class=p>,</span>
+          <span class=kt>int</span> <span class=n>__user</span> <span class=o>*</span><span class=n>parent_tidptr</span><span class=p>,</span>
+          <span class=kt>int</span> <span class=n>__user</span> <span class=o>*</span><span class=n>child_tidptr</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=k>struct</span> <span class=nc>task_struct</span> <span class=o>*</span><span class=n>p</span><span class=p>;</span>
+    <span class=kt>int</span> <span class=n>trace</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=kt>long</span> <span class=n>nr</span><span class=p>;</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Do some preliminary argument and permissions checking before we</span>
+<span class=cm>     * actually start allocating stuff</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_NEWUSER</span><span class=p>)</span> <span class=p>{</span>
+        <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>)</span>
+            <span class=k>return</span> <span class=o>-</span><span class=n>EINVAL</span><span class=p>;</span>
+        <span class=cm>/* hopefully this check will go away when userns support is</span>
+<span class=cm>         * complete</span>
+<span class=cm>         */</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>capable</span><span class=p>(</span><span class=n>CAP_SYS_ADMIN</span><span class=p>)</span> <span class=o>||</span> <span class=o>!</span><span class=n>capable</span><span class=p>(</span><span class=n>CAP_SETUID</span><span class=p>)</span> <span class=o>||</span>
+                <span class=o>!</span><span class=n>capable</span><span class=p>(</span><span class=n>CAP_SETGID</span><span class=p>))</span>
+            <span class=k>return</span> <span class=o>-</span><span class=n>EPERM</span><span class=p>;</span>
+    <span class=p>}</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * We hope to recycle these flags after 2.6.26</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>unlikely</span><span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_STOPPED</span><span class=p>))</span> <span class=p>{</span>
+        <span class=k>static</span> <span class=kt>int</span> <span class=n>__read_mostly</span> <span class=n>count</span> <span class=o>=</span> <span class=mi>100</span><span class=p>;</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>count</span> <span class=o>&gt;</span> <span class=mi>0</span> <span class=o>&amp;&amp;</span> <span class=n>printk_ratelimit</span><span class=p>())</span> <span class=p>{</span>
+            <span class=kt>char</span> <span class=n>comm</span><span class=p>[</span><span class=n>TASK_COMM_LEN</span><span class=p>];</span>
+
+            <span class=n>count</span><span class=o>--</span><span class=p>;</span>
+            <span class=n>printk</span><span class=p>(</span><span class=n>KERN_INFO</span> <span class=s>&quot;fork(): process `%s&#39; used deprecated &quot;</span>
+                    <span class=s>&quot;clone flags 0x%lx</span><span class=se>\n</span><span class=s>&quot;</span><span class=p>,</span>
+                <span class=n>get_task_comm</span><span class=p>(</span><span class=n>comm</span><span class=p>,</span> <span class=n>current</span><span class=p>),</span>
+                <span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_STOPPED</span><span class=p>);</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * When called from kernel_thread, don&#39;t do user tracing stuff.</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>likely</span><span class=p>(</span><span class=n>user_mode</span><span class=p>(</span><span class=n>regs</span><span class=p>)))</span>
+        <span class=n>trace</span> <span class=o>=</span> <span class=n>tracehook_prepare_clone</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>);</span>
+
+    <span class=n>p</span> <span class=o>=</span> <span class=n>copy_process</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>stack_start</span><span class=p>,</span> <span class=n>regs</span><span class=p>,</span> <span class=n>stack_size</span><span class=p>,</span>
+             <span class=n>child_tidptr</span><span class=p>,</span> <span class=nb>NULL</span><span class=p>,</span> <span class=n>trace</span><span class=p>);</span>
+    <span class=cm>/*</span>
+<span class=cm>     * Do this prior waking up the new thread - the thread pointer</span>
+<span class=cm>     * might get invalid after that point, if the thread exits quickly.</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>IS_ERR</span><span class=p>(</span><span class=n>p</span><span class=p>))</span> <span class=p>{</span>
+        <span class=k>struct</span> <span class=nc>completion</span> <span class=n>vfork</span><span class=p>;</span>
+
+        <span class=n>trace_sched_process_fork</span><span class=p>(</span><span class=n>current</span><span class=p>,</span> <span class=n>p</span><span class=p>);</span>
+
+        <span class=n>nr</span> <span class=o>=</span> <span class=n>task_pid_vnr</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_PARENT_SETTID</span><span class=p>)</span>
+            <span class=n>put_user</span><span class=p>(</span><span class=n>nr</span><span class=p>,</span> <span class=n>parent_tidptr</span><span class=p>);</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_VFORK</span><span class=p>)</span> <span class=p>{</span>
+            <span class=n>p</span><span class=o>-&gt;</span><span class=n>vfork_done</span> <span class=o>=</span> <span class=o>&amp;</span><span class=n>vfork</span><span class=p>;</span>
+            <span class=n>init_completion</span><span class=p>(</span><span class=o>&amp;</span><span class=n>vfork</span><span class=p>);</span>
+        <span class=p>}</span>
+
+        <span class=n>audit_finish_fork</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+        <span class=n>tracehook_report_clone</span><span class=p>(</span><span class=n>regs</span><span class=p>,</span> <span class=n>clone_flags</span><span class=p>,</span> <span class=n>nr</span><span class=p>,</span> <span class=n>p</span><span class=p>);</span>
+
+        <span class=cm>/*</span>
+<span class=cm>         * We set PF_STARTING at creation in case tracing wants to</span>
+<span class=cm>         * use this to distinguish a fully live task from one that</span>
+<span class=cm>         * hasn&#39;t gotten to tracehook_report_clone() yet.  Now we</span>
+<span class=cm>         * clear it and set the child going.</span>
+<span class=cm>         */</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>flags</span> <span class=o>&amp;=</span> <span class=o>~</span><span class=n>PF_STARTING</span><span class=p>;</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>unlikely</span><span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_STOPPED</span><span class=p>))</span> <span class=p>{</span>
+            <span class=cm>/*</span>
+<span class=cm>             * We&#39;ll start up with an immediate SIGSTOP.</span>
+<span class=cm>             */</span>
+            <span class=n>sigaddset</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>pending</span><span class=p>.</span><span class=n>signal</span><span class=p>,</span> <span class=n>SIGSTOP</span><span class=p>);</span>
+            <span class=n>set_tsk_thread_flag</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>TIF_SIGPENDING</span><span class=p>);</span>
+            <span class=n>__set_task_state</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>TASK_STOPPED</span><span class=p>);</span>
+        <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+            <span class=n>wake_up_new_task</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>clone_flags</span><span class=p>);</span>
+        <span class=p>}</span>
+
+        <span class=n>tracehook_report_clone_complete</span><span class=p>(</span><span class=n>trace</span><span class=p>,</span> <span class=n>regs</span><span class=p>,</span>
+                        <span class=n>clone_flags</span><span class=p>,</span> <span class=n>nr</span><span class=p>,</span> <span class=n>p</span><span class=p>);</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_VFORK</span><span class=p>)</span> <span class=p>{</span>
+            <span class=n>freezer_do_not_count</span><span class=p>();</span>
+            <span class=n>wait_for_completion</span><span class=p>(</span><span class=o>&amp;</span><span class=n>vfork</span><span class=p>);</span>
+            <span class=n>freezer_count</span><span class=p>();</span>
+            <span class=n>tracehook_report_vfork_done</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>nr</span><span class=p>);</span>
+        <span class=p>}</span>
+    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+        <span class=n>nr</span> <span class=o>=</span> <span class=n>PTR_ERR</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=p>}</span>
+    <span class=k>return</span> <span class=n>nr</span><span class=p>;</span>
+<span class=p>}</span>
+</code></pre></div> <p>do_fork函数通过调用copy_process函数，然后让进程开始运行。copy_process函数代码如下：</p> <div class=highlight><pre><span></span><code><span class=cm>/*</span>
+<span class=cm> * This creates a new process as a copy of the old one,</span>
+<span class=cm> * but does not actually start it yet.</span>
+<span class=cm> *</span>
+<span class=cm> * It copies the registers, and all the appropriate</span>
+<span class=cm> * parts of the process environment (as per the clone</span>
+<span class=cm> * flags). The actual kick-off is left to the caller.</span>
+<span class=cm> */</span>
+<span class=k>static</span> <span class=k>struct</span> <span class=nc>task_struct</span> <span class=o>*</span><span class=n>copy_process</span><span class=p>(</span><span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>clone_flags</span><span class=p>,</span>
+                    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>stack_start</span><span class=p>,</span>
+                    <span class=k>struct</span> <span class=nc>pt_regs</span> <span class=o>*</span><span class=n>regs</span><span class=p>,</span>
+                    <span class=kt>unsigned</span> <span class=kt>long</span> <span class=n>stack_size</span><span class=p>,</span>
+                    <span class=kt>int</span> <span class=n>__user</span> <span class=o>*</span><span class=n>child_tidptr</span><span class=p>,</span>
+                    <span class=k>struct</span> <span class=nc>pid</span> <span class=o>*</span><span class=n>pid</span><span class=p>,</span>
+                    <span class=kt>int</span> <span class=n>trace</span><span class=p>)</span>
+<span class=p>{</span>
+    <span class=kt>int</span> <span class=n>retval</span><span class=p>;</span>
+    <span class=k>struct</span> <span class=nc>task_struct</span> <span class=o>*</span><span class=n>p</span><span class=p>;</span>
+    <span class=kt>int</span> <span class=n>cgroup_callbacks_done</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+
+    <span class=k>if</span> <span class=p>((</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=p>(</span><span class=n>CLONE_NEWNS</span><span class=o>|</span><span class=n>CLONE_FS</span><span class=p>))</span> <span class=o>==</span> <span class=p>(</span><span class=n>CLONE_NEWNS</span><span class=o>|</span><span class=n>CLONE_FS</span><span class=p>))</span>
+        <span class=k>return</span> <span class=n>ERR_PTR</span><span class=p>(</span><span class=o>-</span><span class=n>EINVAL</span><span class=p>);</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Thread groups must share signals as well, and detached threads</span>
+<span class=cm>     * can only be started up within the thread group.</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>)</span> <span class=o>&amp;&amp;</span> <span class=o>!</span><span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_SIGHAND</span><span class=p>))</span>
+        <span class=k>return</span> <span class=n>ERR_PTR</span><span class=p>(</span><span class=o>-</span><span class=n>EINVAL</span><span class=p>);</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Shared signal handlers imply shared VM. By way of the above,</span>
+<span class=cm>     * thread groups also imply shared VM. Blocking this case allows</span>
+<span class=cm>     * for various simplifications in other code.</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_SIGHAND</span><span class=p>)</span> <span class=o>&amp;&amp;</span> <span class=o>!</span><span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_VM</span><span class=p>))</span>
+        <span class=k>return</span> <span class=n>ERR_PTR</span><span class=p>(</span><span class=o>-</span><span class=n>EINVAL</span><span class=p>);</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Siblings of global init remain as zombies on exit since they are</span>
+<span class=cm>     * not reaped by their parent (swapper). To solve this and to avoid</span>
+<span class=cm>     * multi-rooted process trees, prevent global and container-inits</span>
+<span class=cm>     * from creating siblings.</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_PARENT</span><span class=p>)</span> <span class=o>&amp;&amp;</span>
+                <span class=n>current</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>flags</span> <span class=o>&amp;</span> <span class=n>SIGNAL_UNKILLABLE</span><span class=p>)</span>
+        <span class=k>return</span> <span class=n>ERR_PTR</span><span class=p>(</span><span class=o>-</span><span class=n>EINVAL</span><span class=p>);</span>
+
+    <span class=n>retval</span> <span class=o>=</span> <span class=n>security_task_create</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>retval</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>fork_out</span><span class=p>;</span>
+
+    <span class=n>retval</span> <span class=o>=</span> <span class=o>-</span><span class=n>ENOMEM</span><span class=p>;</span>
+    <span class=n>p</span> <span class=o>=</span> <span class=n>dup_task_struct</span><span class=p>(</span><span class=n>current</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>p</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>fork_out</span><span class=p>;</span>
+
+    <span class=n>ftrace_graph_init_task</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+    <span class=n>rt_mutex_init_task</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+<span class=cp>#ifdef CONFIG_PROVE_LOCKING</span>
+    <span class=n>DEBUG_LOCKS_WARN_ON</span><span class=p>(</span><span class=o>!</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirqs_enabled</span><span class=p>);</span>
+    <span class=n>DEBUG_LOCKS_WARN_ON</span><span class=p>(</span><span class=o>!</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>softirqs_enabled</span><span class=p>);</span>
+<span class=cp>#endif</span>
+</code></pre></div> <p>通过dup_task_struct函数为进程创建一个内核栈、thread_info结构和task_struct，这些值与当前进程的值相同。此时，子进程和父进程的描述符是完全相同的。</p> <div class=highlight><pre><span></span><code>    <span class=n>retval</span> <span class=o>=</span> <span class=o>-</span><span class=n>EAGAIN</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>atomic_read</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>real_cred</span><span class=o>-&gt;</span><span class=n>user</span><span class=o>-&gt;</span><span class=n>processes</span><span class=p>)</span> <span class=o>&gt;=</span>
+            <span class=n>task_rlimit</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>RLIMIT_NPROC</span><span class=p>))</span> <span class=p>{</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>capable</span><span class=p>(</span><span class=n>CAP_SYS_ADMIN</span><span class=p>)</span> <span class=o>&amp;&amp;</span> <span class=o>!</span><span class=n>capable</span><span class=p>(</span><span class=n>CAP_SYS_RESOURCE</span><span class=p>)</span> <span class=o>&amp;&amp;</span>
+            <span class=n>p</span><span class=o>-&gt;</span><span class=n>real_cred</span><span class=o>-&gt;</span><span class=n>user</span> <span class=o>!=</span> <span class=n>INIT_USER</span><span class=p>)</span>
+            <span class=k>goto</span> <span class=n>bad_fork_free</span><span class=p>;</span>
+    <span class=p>}</span>
+    <span class=n>retval</span> <span class=o>=</span> <span class=n>copy_creds</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>clone_flags</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>retval</span> <span class=o>&lt;</span> <span class=mi>0</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>bad_fork_free</span><span class=p>;</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * If multiple threads are within copy_process(), then this check</span>
+<span class=cm>     * triggers too late. This doesn&#39;t hurt, the check is only there</span>
+<span class=cm>     * to stop root fork bombs.</span>
+<span class=cm>     */</span>
+    <span class=n>retval</span> <span class=o>=</span> <span class=o>-</span><span class=n>EAGAIN</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>nr_threads</span> <span class=o>&gt;=</span> <span class=n>max_threads</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_count</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>try_module_get</span><span class=p>(</span><span class=n>task_thread_info</span><span class=p>(</span><span class=n>p</span><span class=p>)</span><span class=o>-&gt;</span><span class=n>exec_domain</span><span class=o>-&gt;</span><span class=n>module</span><span class=p>))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_count</span><span class=p>;</span>
+</code></pre></div> <p>检查并确保新创建这个子进程后，当前用户所拥有的进程数目没有超出给它分配的资源限制；</p> <div class=highlight><pre><span></span><code>    <span class=n>p</span><span class=o>-&gt;</span><span class=n>did_exec</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>delayacct_tsk_init</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>  <span class=cm>/* Must remain after dup_task_struct() */</span>
+    <span class=n>copy_flags</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>);</span>
+    <span class=n>INIT_LIST_HEAD</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>children</span><span class=p>);</span>
+    <span class=n>INIT_LIST_HEAD</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>sibling</span><span class=p>);</span>
+    <span class=n>rcu_copy_process</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>vfork_done</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+    <span class=n>spin_lock_init</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>alloc_lock</span><span class=p>);</span>
+
+    <span class=n>init_sigpending</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>pending</span><span class=p>);</span>
+
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>utime</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>stime</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>gtime</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>utimescaled</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>stimescaled</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+<span class=cp>#ifndef CONFIG_VIRT_CPU_ACCOUNTING</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>prev_utime</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>prev_stime</span> <span class=o>=</span> <span class=n>cputime_zero</span><span class=p>;</span>
+<span class=cp>#endif</span>
+<span class=cp>#if defined(SPLIT_RSS_COUNTING)</span>
+    <span class=n>memset</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>rss_stat</span><span class=p>,</span> <span class=mi>0</span><span class=p>,</span> <span class=k>sizeof</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>rss_stat</span><span class=p>));</span>
+<span class=cp>#endif</span>
+
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>default_timer_slack_ns</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>timer_slack_ns</span><span class=p>;</span>
+
+    <span class=n>task_io_accounting_init</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>ioac</span><span class=p>);</span>
+    <span class=n>acct_clear_integrals</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+    <span class=n>posix_cpu_timers_init</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>lock_depth</span> <span class=o>=</span> <span class=mi>-1</span><span class=p>;</span>     <span class=cm>/* -1 = no lock */</span>
+    <span class=n>do_posix_clock_monotonic_gettime</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>start_time</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>real_start_time</span> <span class=o>=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>start_time</span><span class=p>;</span>
+    <span class=n>monotonic_to_bootbased</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>real_start_time</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>io_context</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>audit_context</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+    <span class=n>cgroup_fork</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=cp>#ifdef CONFIG_NUMA</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span> <span class=o>=</span> <span class=n>mpol_dup</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>IS_ERR</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span><span class=p>))</span> <span class=p>{</span>
+        <span class=n>retval</span> <span class=o>=</span> <span class=n>PTR_ERR</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span><span class=p>);</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_cgroup</span><span class=p>;</span>
+    <span class=p>}</span>
+    <span class=n>mpol_fix_fork_child_flag</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=cp>#endif</span>
+<span class=cp>#ifdef CONFIG_TRACE_IRQFLAGS</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>irq_events</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+<span class=cp>#ifdef __ARCH_WANT_INTERRUPTS_ON_CTXSW</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirqs_enabled</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span>
+<span class=cp>#else</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirqs_enabled</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+<span class=cp>#endif</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirq_enable_ip</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirq_enable_event</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirq_disable_ip</span> <span class=o>=</span> <span class=n>_THIS_IP_</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirq_disable_event</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirqs_enabled</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirq_enable_ip</span> <span class=o>=</span> <span class=n>_THIS_IP_</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirq_enable_event</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirq_disable_ip</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirq_disable_event</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>hardirq_context</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>softirq_context</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+<span class=cp>#endif</span>
+<span class=cp>#ifdef CONFIG_LOCKDEP</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>lockdep_depth</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span> <span class=cm>/* no locks held yet */</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>curr_chain_key</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>lockdep_recursion</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+<span class=cp>#endif</span>
+
+<span class=cp>#ifdef CONFIG_DEBUG_MUTEXES</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>blocked_on</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span> <span class=cm>/* not blocked yet */</span>
+<span class=cp>#endif</span>
+<span class=cp>#ifdef CONFIG_CGROUP_MEM_RES_CTLR</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>memcg_batch</span><span class=p>.</span><span class=n>do_batch</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>memcg_batch</span><span class=p>.</span><span class=n>memcg</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+<span class=cp>#endif</span>
+
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>bts</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+
+    <span class=cm>/* Perform scheduler related setup. Assign this task to a CPU. */</span>
+    <span class=n>sched_fork</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>clone_flags</span><span class=p>);</span>
+
+    <span class=n>retval</span> <span class=o>=</span> <span class=n>perf_event_init_task</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>retval</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_policy</span><span class=p>;</span>
+
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>audit_alloc</span><span class=p>(</span><span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_policy</span><span class=p>;</span>
+    <span class=cm>/* copy all the process information */</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_semundo</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_audit</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_files</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_semundo</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_fs</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_files</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_sighand</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_fs</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_signal</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_sighand</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_mm</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_signal</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_namespaces</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_mm</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>retval</span> <span class=o>=</span> <span class=n>copy_io</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>p</span><span class=p>)))</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_namespaces</span><span class=p>;</span>
+    <span class=n>retval</span> <span class=o>=</span> <span class=n>copy_thread</span><span class=p>(</span><span class=n>clone_flags</span><span class=p>,</span> <span class=n>stack_start</span><span class=p>,</span> <span class=n>stack_size</span><span class=p>,</span> <span class=n>p</span><span class=p>,</span> <span class=n>regs</span><span class=p>);</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>retval</span><span class=p>)</span>
+        <span class=k>goto</span> <span class=n>bad_fork_cleanup_io</span><span class=p>;</span>
+
+    <span class=k>if</span> <span class=p>(</span><span class=n>pid</span> <span class=o>!=</span> <span class=o>&amp;</span><span class=n>init_struct_pid</span><span class=p>)</span> <span class=p>{</span>
+        <span class=n>retval</span> <span class=o>=</span> <span class=o>-</span><span class=n>ENOMEM</span><span class=p>;</span>
+        <span class=n>pid</span> <span class=o>=</span> <span class=n>alloc_pid</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>nsproxy</span><span class=o>-&gt;</span><span class=n>pid_ns</span><span class=p>);</span>
+        <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=n>pid</span><span class=p>)</span>
+            <span class=k>goto</span> <span class=n>bad_fork_cleanup_io</span><span class=p>;</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_NEWPID</span><span class=p>)</span> <span class=p>{</span>
+            <span class=n>retval</span> <span class=o>=</span> <span class=n>pid_ns_prepare_proc</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>nsproxy</span><span class=o>-&gt;</span><span class=n>pid_ns</span><span class=p>);</span>
+            <span class=k>if</span> <span class=p>(</span><span class=n>retval</span> <span class=o>&lt;</span> <span class=mi>0</span><span class=p>)</span>
+                <span class=k>goto</span> <span class=n>bad_fork_free_pid</span><span class=p>;</span>
+        <span class=p>}</span>
+    <span class=p>}</span>
+
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>pid</span> <span class=o>=</span> <span class=n>pid_nr</span><span class=p>(</span><span class=n>pid</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>tgid</span> <span class=o>=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>pid</span><span class=p>;</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>)</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>tgid</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>tgid</span><span class=p>;</span>
+
+    <span class=k>if</span> <span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>nsproxy</span> <span class=o>!=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>nsproxy</span><span class=p>)</span> <span class=p>{</span>
+        <span class=n>retval</span> <span class=o>=</span> <span class=n>ns_cgroup_clone</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>pid</span><span class=p>);</span>
+        <span class=k>if</span> <span class=p>(</span><span class=n>retval</span><span class=p>)</span>
+            <span class=k>goto</span> <span class=n>bad_fork_free_pid</span><span class=p>;</span>
+    <span class=p>}</span>
+</code></pre></div> <p>调用alloc_pid()为新进程分配一个有效的PID</p> <div class=highlight><pre><span></span><code>    <span class=n>p</span><span class=o>-&gt;</span><span class=n>set_child_tid</span> <span class=o>=</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_CHILD_SETTID</span><span class=p>)</span> <span class=o>?</span> <span class=nl>child_tidptr</span> <span class=p>:</span> <span class=nb>NULL</span><span class=p>;</span>
+    <span class=cm>/*</span>
+<span class=cm>     * Clear TID on mm_release()?</span>
+<span class=cm>     */</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>clear_child_tid</span> <span class=o>=</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_CHILD_CLEARTID</span><span class=p>)</span> <span class=o>?</span> <span class=nl>child_tidptr</span><span class=p>:</span> <span class=nb>NULL</span><span class=p>;</span>
+<span class=cp>#ifdef CONFIG_FUTEX</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>robust_list</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+<span class=cp>#ifdef CONFIG_COMPAT</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>compat_robust_list</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+<span class=cp>#endif</span>
+    <span class=n>INIT_LIST_HEAD</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>pi_state_list</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>pi_state_cache</span> <span class=o>=</span> <span class=nb>NULL</span><span class=p>;</span>
+<span class=cp>#endif</span>
+    <span class=cm>/*</span>
+<span class=cm>     * sigaltstack should be cleared when sharing the same VM</span>
+<span class=cm>     */</span>
+    <span class=k>if</span> <span class=p>((</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=p>(</span><span class=n>CLONE_VM</span><span class=o>|</span><span class=n>CLONE_VFORK</span><span class=p>))</span> <span class=o>==</span> <span class=n>CLONE_VM</span><span class=p>)</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>sas_ss_sp</span> <span class=o>=</span> <span class=n>p</span><span class=o>-&gt;</span><span class=n>sas_ss_size</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Syscall tracing and stepping should be turned off in the</span>
+<span class=cm>     * child regardless of CLONE_PTRACE.</span>
+<span class=cm>     */</span>
+    <span class=n>user_disable_single_step</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>clear_tsk_thread_flag</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>TIF_SYSCALL_TRACE</span><span class=p>);</span>
+<span class=cp>#ifdef TIF_SYSCALL_EMU</span>
+    <span class=n>clear_tsk_thread_flag</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>TIF_SYSCALL_EMU</span><span class=p>);</span>
+<span class=cp>#endif</span>
+    <span class=n>clear_all_latency_tracing</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+
+    <span class=cm>/* ok, now we should be set up.. */</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>exit_signal</span> <span class=o>=</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>)</span> <span class=o>?</span> <span class=mi>-1</span> <span class=o>:</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CSIGNAL</span><span class=p>);</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>pdeath_signal</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>exit_state</span> <span class=o>=</span> <span class=mi>0</span><span class=p>;</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Ok, make it visible to the rest of the system.</span>
+<span class=cm>     * We dont wake it up yet.</span>
+<span class=cm>     */</span>
+    <span class=n>p</span><span class=o>-&gt;</span><span class=n>group_leader</span> <span class=o>=</span> <span class=n>p</span><span class=p>;</span>
+    <span class=n>INIT_LIST_HEAD</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>thread_group</span><span class=p>);</span>
+
+    <span class=cm>/* Now that the task is set up, run cgroup callbacks if</span>
+<span class=cm>     * necessary. We need to run them before the task is visible</span>
+<span class=cm>     * on the tasklist. */</span>
+    <span class=n>cgroup_fork_callbacks</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>cgroup_callbacks_done</span> <span class=o>=</span> <span class=mi>1</span><span class=p>;</span>
+
+    <span class=cm>/* Need tasklist lock for parent etc handling! */</span>
+    <span class=n>write_lock_irq</span><span class=p>(</span><span class=o>&amp;</span><span class=n>tasklist_lock</span><span class=p>);</span>
+
+    <span class=cm>/* CLONE_PARENT re-uses the old parent */</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=p>(</span><span class=n>CLONE_PARENT</span><span class=o>|</span><span class=n>CLONE_THREAD</span><span class=p>))</span> <span class=p>{</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>real_parent</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>real_parent</span><span class=p>;</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>parent_exec_id</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>parent_exec_id</span><span class=p>;</span>
+    <span class=p>}</span> <span class=k>else</span> <span class=p>{</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>real_parent</span> <span class=o>=</span> <span class=n>current</span><span class=p>;</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>parent_exec_id</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>self_exec_id</span><span class=p>;</span>
+    <span class=p>}</span>
+
+    <span class=n>spin_lock</span><span class=p>(</span><span class=o>&amp;</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>sighand</span><span class=o>-&gt;</span><span class=n>siglock</span><span class=p>);</span>
+
+    <span class=cm>/*</span>
+<span class=cm>     * Process group and session signals need to be delivered to just the</span>
+<span class=cm>     * parent before the fork or both the parent and the child after the</span>
+<span class=cm>     * fork. Restart if a signal comes in before we add the new process to</span>
+<span class=cm>     * it&#39;s process group.</span>
+<span class=cm>     * A fatal signal pending means that current will exit, so the new</span>
+<span class=cm>     * thread can&#39;t slip out of an OOM kill (or normal SIGKILL).</span>
+<span class=cm>     */</span>
+    <span class=n>recalc_sigpending</span><span class=p>();</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>signal_pending</span><span class=p>(</span><span class=n>current</span><span class=p>))</span> <span class=p>{</span>
+        <span class=n>spin_unlock</span><span class=p>(</span><span class=o>&amp;</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>sighand</span><span class=o>-&gt;</span><span class=n>siglock</span><span class=p>);</span>
+        <span class=n>write_unlock_irq</span><span class=p>(</span><span class=o>&amp;</span><span class=n>tasklist_lock</span><span class=p>);</span>
+        <span class=n>retval</span> <span class=o>=</span> <span class=o>-</span><span class=n>ERESTARTNOINTR</span><span class=p>;</span>
+        <span class=k>goto</span> <span class=n>bad_fork_free_pid</span><span class=p>;</span>
+    <span class=p>}</span>
+
+    <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>)</span> <span class=p>{</span>
+        <span class=n>atomic_inc</span><span class=p>(</span><span class=o>&amp;</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>count</span><span class=p>);</span>
+        <span class=n>atomic_inc</span><span class=p>(</span><span class=o>&amp;</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>live</span><span class=p>);</span>
+        <span class=n>p</span><span class=o>-&gt;</span><span class=n>group_leader</span> <span class=o>=</span> <span class=n>current</span><span class=o>-&gt;</span><span class=n>group_leader</span><span class=p>;</span>
+        <span class=n>list_add_tail_rcu</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>thread_group</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>group_leader</span><span class=o>-&gt;</span><span class=n>thread_group</span><span class=p>);</span>
+    <span class=p>}</span>
+
+    <span class=k>if</span> <span class=p>(</span><span class=n>likely</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>pid</span><span class=p>))</span> <span class=p>{</span>
+        <span class=n>tracehook_finish_clone</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>clone_flags</span><span class=p>,</span> <span class=n>trace</span><span class=p>);</span>
+
+        <span class=k>if</span> <span class=p>(</span><span class=n>thread_group_leader</span><span class=p>(</span><span class=n>p</span><span class=p>))</span> <span class=p>{</span>
+            <span class=k>if</span> <span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_NEWPID</span><span class=p>)</span>
+                <span class=n>p</span><span class=o>-&gt;</span><span class=n>nsproxy</span><span class=o>-&gt;</span><span class=n>pid_ns</span><span class=o>-&gt;</span><span class=n>child_reaper</span> <span class=o>=</span> <span class=n>p</span><span class=p>;</span>
+
+            <span class=n>p</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>leader_pid</span> <span class=o>=</span> <span class=n>pid</span><span class=p>;</span>
+            <span class=n>tty_kref_put</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>tty</span><span class=p>);</span>
+            <span class=n>p</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>tty</span> <span class=o>=</span> <span class=n>tty_kref_get</span><span class=p>(</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>signal</span><span class=o>-&gt;</span><span class=n>tty</span><span class=p>);</span>
+            <span class=n>attach_pid</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>PIDTYPE_PGID</span><span class=p>,</span> <span class=n>task_pgrp</span><span class=p>(</span><span class=n>current</span><span class=p>));</span>
+            <span class=n>attach_pid</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>PIDTYPE_SID</span><span class=p>,</span> <span class=n>task_session</span><span class=p>(</span><span class=n>current</span><span class=p>));</span>
+            <span class=n>list_add_tail</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>sibling</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>real_parent</span><span class=o>-&gt;</span><span class=n>children</span><span class=p>);</span>
+            <span class=n>list_add_tail_rcu</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>tasks</span><span class=p>,</span> <span class=o>&amp;</span><span class=n>init_task</span><span class=p>.</span><span class=n>tasks</span><span class=p>);</span>
+            <span class=n>__get_cpu_var</span><span class=p>(</span><span class=n>process_counts</span><span class=p>)</span><span class=o>++</span><span class=p>;</span>
+        <span class=p>}</span>
+        <span class=n>attach_pid</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>PIDTYPE_PID</span><span class=p>,</span> <span class=n>pid</span><span class=p>);</span>
+        <span class=n>nr_threads</span><span class=o>++</span><span class=p>;</span>
+    <span class=p>}</span>
+
+    <span class=n>total_forks</span><span class=o>++</span><span class=p>;</span>
+    <span class=n>spin_unlock</span><span class=p>(</span><span class=o>&amp;</span><span class=n>current</span><span class=o>-&gt;</span><span class=n>sighand</span><span class=o>-&gt;</span><span class=n>siglock</span><span class=p>);</span>
+    <span class=n>write_unlock_irq</span><span class=p>(</span><span class=o>&amp;</span><span class=n>tasklist_lock</span><span class=p>);</span>
+    <span class=n>proc_fork_connector</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>cgroup_post_fork</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>perf_event_fork</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=k>return</span> <span class=n>p</span><span class=p>;</span>
+</code></pre></div> <p>扫尾工作并返回一个指向子进程的指针；</p> <div class=highlight><pre><span></span><code><span class=nl>bad_fork_free_pid</span><span class=p>:</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>pid</span> <span class=o>!=</span> <span class=o>&amp;</span><span class=n>init_struct_pid</span><span class=p>)</span>
+        <span class=n>free_pid</span><span class=p>(</span><span class=n>pid</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_io</span><span class=p>:</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>io_context</span><span class=p>)</span>
+        <span class=n>exit_io_context</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_namespaces</span><span class=p>:</span>
+    <span class=n>exit_task_namespaces</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_mm</span><span class=p>:</span>
+    <span class=k>if</span> <span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mm</span><span class=p>)</span>
+        <span class=n>mmput</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mm</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_signal</span><span class=p>:</span>
+    <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=p>(</span><span class=n>clone_flags</span> <span class=o>&amp;</span> <span class=n>CLONE_THREAD</span><span class=p>))</span>
+        <span class=n>__cleanup_signal</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>signal</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_sighand</span><span class=p>:</span>
+    <span class=n>__cleanup_sighand</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>sighand</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_fs</span><span class=p>:</span>
+    <span class=n>exit_fs</span><span class=p>(</span><span class=n>p</span><span class=p>);</span> <span class=cm>/* blocking */</span>
+<span class=nl>bad_fork_cleanup_files</span><span class=p>:</span>
+    <span class=n>exit_files</span><span class=p>(</span><span class=n>p</span><span class=p>);</span> <span class=cm>/* blocking */</span>
+<span class=nl>bad_fork_cleanup_semundo</span><span class=p>:</span>
+    <span class=n>exit_sem</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_audit</span><span class=p>:</span>
+    <span class=n>audit_free</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_policy</span><span class=p>:</span>
+    <span class=n>perf_event_free_task</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=cp>#ifdef CONFIG_NUMA</span>
+    <span class=n>mpol_put</span><span class=p>(</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>mempolicy</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_cgroup</span><span class=p>:</span>
+<span class=cp>#endif</span>
+    <span class=n>cgroup_exit</span><span class=p>(</span><span class=n>p</span><span class=p>,</span> <span class=n>cgroup_callbacks_done</span><span class=p>);</span>
+    <span class=n>delayacct_tsk_free</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+    <span class=n>module_put</span><span class=p>(</span><span class=n>task_thread_info</span><span class=p>(</span><span class=n>p</span><span class=p>)</span><span class=o>-&gt;</span><span class=n>exec_domain</span><span class=o>-&gt;</span><span class=n>module</span><span class=p>);</span>
+<span class=nl>bad_fork_cleanup_count</span><span class=p>:</span>
+    <span class=n>atomic_dec</span><span class=p>(</span><span class=o>&amp;</span><span class=n>p</span><span class=o>-&gt;</span><span class=n>cred</span><span class=o>-&gt;</span><span class=n>user</span><span class=o>-&gt;</span><span class=n>processes</span><span class=p>);</span>
+    <span class=n>exit_creds</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>bad_fork_free</span><span class=p>:</span>
+    <span class=n>free_task</span><span class=p>(</span><span class=n>p</span><span class=p>);</span>
+<span class=nl>fork_out</span><span class=p>:</span>
+    <span class=k>return</span> <span class=n>ERR_PTR</span><span class=p>(</span><span class=n>retval</span><span class=p>);</span>
+<span class=p>}</span>
+</code></pre></div> <p>故障处理；</p> <h4 id=_1>创建线程<a class=headerlink href=#_1 title="Permanent link">&para;</a></h4> <p>线程的创建和普通进程创建类似，不过在调用clone()的时候需要传递一些参数标志来指明需要共享的资源</p> <div class=highlight><pre><span></span><code><span class=n>clone</span><span class=p>(</span><span class=n>CLONE_VM</span> <span class=o>|</span> <span class=n>CLONE_FS</span> <span class=o>|</span> <span class=n>CLONE_FILES</span> <span class=o>|</span> <span class=n>CLONE_SIGHAND</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span>
+</code></pre></div> <p>对比一个普通的fork实现如下：</p> <div class=highlight><pre><span></span><code><span class=n>clone</span><span class=p>(</span><span class=n>SIGCHLD</span><span class=p>,</span> <span class=mi>0</span><span class=p>);</span>
+</code></pre></div> <p>而vfork的实现如下：</p> <div class=highlight><pre><span></span><code><span class=n>clone</span><span class=p>(</span><span class=n>CLONE_VFORK</span> <span class=o>|</span> <span class=n>CLONE_VM</span> <span class=o>|</span> <span class=n>SIGCHLD</span><span class=p>,</span> <span class=mi>0</span><span class=p>);</span>
+</code></pre></div> <p>内核线程启动后就一直运行直到调用do_exit()退出，或者内核的其他部分调用kthread_stop()退出，传递给kthread_stop()的参数为kthread_create()的函数返回的task_struct结构的地址：</p> <p>int kthread_stop(struct task_struct *k)</p> </article> </div> </div> </main> <footer class=md-footer> <nav class="md-footer__inner md-grid" aria-label=Footer> <a href=../%E8%BF%9B%E7%A8%8B%E5%AE%B6%E6%97%8F%E6%A0%91/ class="md-footer__link md-footer__link--prev" rel=prev> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12z"/></svg> </div> <div class=md-footer__title> <div class=md-ellipsis> <span class=md-footer__direction> 上一页 </span> 进程家族树 </div> </div> </a> <a href=../%E8%BF%9B%E7%A8%8B%E7%BB%88%E6%AD%A2/ class="md-footer__link md-footer__link--next" rel=next> <div class=md-footer__title> <div class=md-ellipsis> <span class=md-footer__direction> 下一页 </span> 进程终止 </div> </div> <div class="md-footer__button md-icon"> <svg xmlns=http://www.w3.org/2000/svg viewbox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4z"/></svg> </div> </a> </nav> <div class="md-footer-meta md-typeset"> <div class="md-footer-meta__inner md-grid"> <div class=md-footer-copyright> <div class=md-footer-copyright__highlight> Copyright &copy; 2020-2021 mestarz </div> Made with <a href=https://squidfunk.github.io/mkdocs-material/ target=_blank rel=noopener> Material for MkDocs </a> </div> </div> </div> </footer> </div> <div class=md-dialog data-md-component=dialog> <div class="md-dialog__inner md-typeset"></div> </div> <script id=__config type=application/json>{"base": "../..", "features": ["navigation.tabs", "navigation.tabs.sticky", "search.suggest", "search.highlight", "search.share"], "translations": {"clipboard.copy": "\u590d\u5236", "clipboard.copied": "\u5df2\u590d\u5236", "search.config.lang": "ja", "search.config.pipeline": "trimmer, stemmer", "search.config.separator": "[\\uff0c\\u3002]+", "search.placeholder": "\u641c\u7d22", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.term.missing": "Missing"}, "search": "../../assets/javascripts/workers/search.f5903571.min.js", "version": null}</script> <script src=../../assets/javascripts/bundle.3981fc68.min.js></script> <script src=https://cdnjs.loli.net/ajax/libs/pangu/3.3.0/pangu.min.js></script> <script src=../../static/js/extra.js></script> <script src="https://cdnjs.loli.net/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script> </body> </html>
